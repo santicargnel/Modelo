@@ -1,0 +1,438 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+/* GRID de productos: 4 columnas en grandes, 2 en chicas */
+.productos-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;              /* espacio entre productos */
+  width: 100%;            /* 👉 CLAVE: ocupa todo el ancho disponible */
+}
+
+/* En pantallas chicas: 2 columnas */
+@media (max-width: 768px) {
+  .productos-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Estilo de cada botón de producto */
+.producto-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  padding: 2px;
+  border: 2px solid #a73332;
+  border-radius: 8px;
+
+  background: #ffffff;
+  cursor: pointer;
+  text-align: center;
+
+  font-size: 18px; /* ← Tamaño letra productos */
+  color: #26608e; /* ← Color letra productos */
+  font-weight: bold; /* ← negrita */
+
+  .producto-btn:hover {
+}
+}
+
+.producto-btn:hover {
+  background: #e9e1d7; /* o cualquier color al pasar cursor */
+}
+/* Titulo programa */
+.titulo {
+  text-align: center;
+  background-color: #a73332; /* relleno */
+  color: #e9e1d7;
+  font-size: 2.25rem; /* text-4xl */
+  font-weight: bold;
+  padding: 0.5rem;
+  border-radius: 8px;
+  margin-bottom: 0.1rem;
+}
+
+/* Venta numero */
+.venta-numero {
+  text-align: center;
+  background-color: #e9e1d7; /* relleno */
+  font-size: 1.5rem;     /* text-2xl */
+  font-weight: bold;     /* font-bold */
+  margin-bottom: 0.5rem; /* mb-2 */
+  border: 2px solid #a73332; /* bordes */
+  padding: 0.75rem;      /* p-1 */
+  border-radius: 8px; /* rounded-lg */
+}
+.titulo {
+  font-family: "Montserrat", sans-serif;
+}
+
+.venta-numero {
+  font-family: "Montserrat", sans-serif;
+}
+.subtitulo {
+font-family: "Montserrat", sans-serif;
+}
+
+/* Productos seleccionados */
+.subtitulo {
+  text-align: center;
+  background-color: #e9e1d7; /* relleno */
+  font-size: 1.5rem;     /* text-2xl */
+  font-weight: bold;     /* font-bold */
+  margin-bottom: 0.5rem; /* mb-2 */
+  border: 2px solid #a73332; /* bordes */
+  padding: 0.5rem;      /* p-1 */
+  border-radius: 8px; /* rounded-lg */
+}
+.lista {
+  font-family: "Montserrat", sans-serif; /* tu fuente */
+  text-align: left;
+  background-color: #ffffff; /* relleno */
+  font-size: 1rem;     /* text-2xl */
+  margin-bottom: 0.5rem; /* mb-2 */
+  border: 2px solid #a73332; /* bordes */
+  padding: 0.5rem;      /* p-1 */
+  border-radius: 8px; /* rounded-lg */
+  color: #26608e; /* ← Color letra */
+  font-weight: bold; /* ← negrita */
+}
+.boton-duplicar {
+  background-color: #12860c;        /* bg-gray-200 */
+  cursor: pointer;
+  border-radius: 8px;           /* rounded */
+  padding: 0 0.75rem;               /* px-3 */
+  font-size: 0.875rem;              /* text-sm */
+  font-weight: bold;                /* font-bold */
+  color: #ffffff;                   /* text-gray-900 */
+  border: none;
+}
+
+.boton-duplicar:hover {
+  background-color: #e9e1d7;        /* hover:bg-gray-300 */
+  color: #12860c;
+}
+
+.boton-eliminar {
+  background-color: #ff2727;        /* bg-gray-200 */
+  cursor: pointer;
+  border-radius: 8px;           /* rounded */
+  padding: 0 0.75rem;               /* px-3 */
+  font-size: 0.875rem;              /* text-sm */
+  font-weight: bold;                /* font-bold */
+  color: #ffffff;                   /* text-gray-900 */
+  border: none;
+}
+
+.boton-eliminar:hover {
+  background-color: #e9e1d7;       /* hover:bg-red-700 */
+  color: #ff2727;
+}
+.derecha {
+  margin-left: auto;
+}
+/* Cada línea de producto se comporta como una fila flex */
+.linea-producto {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* izquierda vs derecha */
+}
+
+/* Contenedor de botones a la derecha */
+.linea-botones {
+  display: flex;
+  gap: 8px; /* espacio entre Duplicar y Eliminar */
+    margin-left: auto;   /* empuja el contenedor a la derecha */
+}
+.lista {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.mods-container {
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;                  /* espacio vertical y horizontal */
+  font-size: 0.85rem;
+}
+/* opciones menu */
+.mod-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: #000000;                 /* color */
+  font-weight: 400;
+  font-family: "Montserrat", sans-serif;
+}
+
+.mod-label input[type="checkbox"] {
+  accent-color: #a73332;          /* rojo como tus bordes */
+}
+/* Layout de cada línea con GRID: texto izquierda, botones derecha, mods abajo */
+.item-linea {
+  display: grid;
+  grid-template-columns: 1fr auto; /* izquierda ocupa todo, derecha se ajusta */
+  grid-auto-rows: auto;
+  column-gap: 8px;
+  row-gap: 4px;
+}
+
+/* Texto del producto (columna izquierda, fila 1) */
+.item-linea-texto {
+  grid-column: 1;
+}
+
+/* Botones (columna derecha, fila 1), pegados a la derecha */
+.item-linea-botones {
+  grid-column: 2;
+  justify-self: end;    /* 👈 los lleva al borde derecho de la tarjeta */
+  display: flex;
+  gap: 8px;
+}
+
+/* Modificadores (fila de abajo, ocupan todo el ancho) */
+.item-linea-mods {
+  grid-column: 1 / span 2; /* ocupa ambas columnas */
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+/* Estilo visual de cada modificador */
+.mod-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: #000000;
+  font-size: 0.85rem;
+  font-weight: 550;
+  font-family: "Montserrat", sans-serif;
+}
+
+.mod-label input[type="checkbox"] {
+  accent-color: #a73332; /* mismo rojo de tu UI */
+}
+.precio-unit {
+   font-family: "Montserrat", sans-serif; /* tu fuente */
+  text-align: left;
+  background-color: #ffffff; /* relleno */
+  font-size: 1rem;     /* text-2xl */
+  margin-bottom: 0.5rem; /* mb-2 */
+  color: #12860c; /* ← Color letra */
+  font-weight: bold; /* ← negrita */
+}
+
+.precio-total {
+ font-family: "Montserrat", sans-serif; /* tu fuente */
+  text-align: left;
+  background-color: #ffffff; /* relleno */
+  font-size: 1rem;     /* text-2xl */
+  margin-bottom: 0rem; /* mb-2 */
+  color: #ff2727; /* ← Color letra */
+  font-weight: bold; /* ← negrita */
+}
+/* Línea separadora entre items */
+.item-linea {
+  border-bottom: 1.5px solid #a73332;
+  padding: 4px 0;   /* ← padding superior e inferior iguales */
+  margin: 4px 0;    /* ← espacio exterior arriba y abajo */
+}
+
+
+/* Quitar la línea del último item */
+.item-linea:last-child {
+  border-bottom: none;
+}
+/* precio de lo q se agrega */
+.mod-plus {
+  color: #000000;
+  margin-left: 2px;   /* 👉 pequeño espacio entre texto y el precio */
+}
+/* precio de lo q se saca */
+.mod-minus {
+  color: #000000;
+  margin-left: 2px;   /* 👉 pequeño espacio entre texto y el precio */
+}
+
+.consumo-label {
+  font-weight: bold;
+  color: #26608e;
+  font-size: 1.1rem;
+}
+
+.consumo-item {
+  color: #000000;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.consumo-item input[type="radio"] {
+  accent-color: #a73332;
+  transform: scale(1.2);
+}
+
+/* Precio total */
+.total-precio {
+  font-family: "Montserrat", sans-serif;
+  font-weight: 700;
+  font-size: 1.8rem;
+  color: #26608e;
+  border: 2px solid #a73332;
+  padding: 0.5rem 14px;
+  border-radius: 8px;
+  background: #e9e1d7;
+  display: block;
+  text-align: center;
+  margin-top: 1rem;
+}
+/* Espacios entre recuadros */
+.bloque {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+/* Contenedor general */
+.consumo-y-aclaraciones {
+  border: 2px solid #a73332;
+  border-radius: 8px;
+  padding: 0.5rem;
+  background-color: #ffffff;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Izquierda */
+.consumo-opciones {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: "Montserrat", sans-serif;
+  background-color: #ffffff;
+}
+
+.label-consumo {
+  font-weight: bold;
+  color: #26608e;
+  font-family: "Montserrat", sans-serif;
+}
+
+/* Input de aclaraciones a la derecha */
+.aclaraciones-input {
+  flex: 1;
+  max-width: 880px;
+  border: 1px solid #a73332;
+  border-radius: 8px;
+  padding: 6px 10px;
+
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.95rem;
+  color: #26608e;
+  outline: none;
+  transition: 0.2s ease-in-out;
+}
+
+/* efecto al hacer click */
+.aclaraciones-input:focus {
+  border-color: #12860c;
+  background-color: #ffffff;
+  box-shadow: 0 0 4px rgba(38, 96, 142, 0.3);
+}
+
+/* Placeholder más suave */
+.aclaraciones-input::placeholder {
+  color: #a73332;
+  font-weight: 400;
+}
+.alto-unico {
+  height: 30px;          /* 👈 todos los rectángulos misma altura */
+  display: flex;
+  align-items: center;   /* contenido centrado vertical */
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+.subtitulo.alto-unico,
+.total-precio.alto-unico {
+  justify-content: center;   /* centra el texto horizontalmente */
+}
+/* ===== BOTÓN BASE ===== */
+.btn-base {
+  cursor: pointer;
+  border-radius: 0.25rem;     /* rounded */
+  padding: 6px 14px;          /* py-1 px-3 */
+  font-size: 0.9rem;          /* similar a text-sm */
+  font-family: "Montserrat", sans-serif;
+  font-weight: 700;           /* bold */
+  border: none;
+  transition: 0.2s ease-in-out;
+}
+/* ===== ESTILO TIPO DUPLICAR PARA TODOS ===== */
+.btn-duplicar {
+  background-color: #8e265a;
+  color: #e9e1d7;;
+}
+.btn-duplicar:hover {
+  background-color: #e9e1d7;
+  color: #8e265a;
+}
+
+/* ===== ELIMINAR ===== */
+.btn-eliminar {
+  background-color: #ff2727;
+  color: #e9e1d7;;
+}
+.btn-eliminar:hover {
+  background-color: #e9e1d7;
+  color: #ff2727;
+}
+
+/* ===== CONFIRMAR VENTA ===== */
+.btn-confirmar {
+  background-color: #12860c;
+  color: #e9e1d7;
+}
+.btn-confirmar:hover {
+  background-color: #e9e1d7;
+  color: #12860c;
+}
+
+/* ===== COMANDA ===== */
+.btn-comanda {
+  background-color: #997d01;
+  color: #e9e1d7;;
+}
+.btn-comanda:hover {
+  background-color: #e9e1d7;
+  color: #997d01;
+}
+
+/* ===== LIMPIAR ===== */
+.btn-limpiar {
+  background-color: #ff2727;
+  color: #e9e1d7;;
+}
+.btn-limpiar:hover {
+  background-color: #e9e1d7;
+  color: #ff2727;
+}
+
+/* ===== ACCIONES SECUNDARIAS (registros, resumenes, etc) ===== */
+.btn-secundario {
+  background-color: #26608e;
+  color: #e9e1d7;;
+  font-size: ;  /* más chico */
+}
+.btn-secundario:hover {
+  background-color: #e9e1d7;
+  color: #26608e;
+}
+
+
