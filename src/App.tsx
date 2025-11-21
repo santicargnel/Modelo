@@ -351,8 +351,50 @@ const nowParts = () => {
 const sumaPagos = (pagos: Record<MedioPago, number>) =>
   MEDIOS.reduce((s, k) => s + (Number(pagos[k]) || 0), 0);
 
-/* ========================= Componente ========================= */
+// 🔥 BOTÓN REUTILIZABLE CON HOVER
+const Boton = ({
+  children,
+  bg,
+  color,
+  hoverBg,
+  hoverColor,
+  onClick
+}: {
+  children: React.ReactNode;
+  bg: string;
+  color: string;
+  hoverBg: string;
+  hoverColor: string;
+  onClick?: () => void;
+}) => {
+  const [hover, setHover] = useState(false);
+
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        backgroundColor: hover ? hoverBg : bg,
+        color: hover ? hoverColor : color,
+        cursor: "pointer",
+        borderRadius: "4px",
+        padding: "6px 14px",
+        fontSize: "0.9rem",
+        fontFamily: "Montserrat, sans-serif",
+        fontWeight: 700,
+        border: "none",
+        transition: "0.2s ease-in-out",
+      }}
+    >
+      {children}
+    </button>
+  );
+};
+
+// ========================= Componente =========================
 const Evento14Diciembre = () => {
+
   // Estado principal + persistencia
   // Estado principal + persistencia
   // Estado principal + persistencia
@@ -2353,425 +2395,507 @@ const precioTotal = precioUnit * (linea.qty || 1);
         )}
 
         {/* ========= MODAL COBRO ========= */}
-        {cobroAbierto && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div
-              className="absolute inset-0 bg-black/50"
-              onClick={cancelarCobro}
+{cobroAbierto && (
+  <div
+    style={{
+      fontFamily: "Montserrat, sans-serif",
+      position: "fixed",
+      inset: 0,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 9999,
+      padding: 10,
+    }}
+    onClick={cancelarCobro} /* clic afuera cierra */
+  >
+    <div
+      onClick={(e) => e.stopPropagation()} /* evita que cierre al clicar adentro */
+      style={{
+        fontFamily: "Montserrat, sans-serif",
+        background: "white",
+        width: "100%",
+        maxWidth: "420px",
+        borderRadius: "10px",
+        border: "1px solid #d90f0fff",
+        padding: "16px",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+      }}
+    >
+      <h3 style={{ fontSize: 18, fontWeight: "bold", textAlign: "center" }}>
+        Cobro de la venta
+      </h3>
+
+      <div
+        style={{
+          fontFamily: "Montserrat, sans-serif",
+          fontSize: 18,
+          color: "#ff2727",
+          textAlign: "center",
+          marginTop: 4,
+          marginBottom: 8,
+        }}
+      >
+        TOTAL A COBRAR: <b>${fmtAR(calcularTotal())}</b>
+      </div>
+
+      <div style={{ marginTop: 8 }}>
+        {MEDIOS.map((m) => (
+          <div
+            key={m}
+            style={{
+              fontFamily: "Montserrat, sans-serif",
+              color: "#26608e",
+              display: "flex",
+              gap: 8,
+              alignItems: "center",
+              marginBottom: 6,
+            }}
+          >
+            <label style={{ width: 80 }}>{m}</label>
+            <input
+              type="number"
+              min={0}
+              step="1"
+              inputMode="numeric"
+              style={{
+                flex: 1,
+                padding: 6,
+                borderRadius: 4,
+                border: "1px solid #a73332",
+              }}
+              value={pagosDraft[m] ? pagosDraft[m] : ""}
+              onChange={(e) =>
+                setPagosDraft((prev) => ({
+                  ...prev,
+                  [m]: Number(e.target.value) || 0,
+                }))
+              }
             />
-            <div className="relative z-10 w-[95%] max-w-md bg-white rounded-xl shadow-xl border border-gray-500 p-4">
-              <h3 className="text-lg font-semibold text-center">
-                Cobro de la venta
-              </h3>
-              <div className="text-sm text-gray-600 text-center mt-1">
-                Total a cobrar: <b>${fmtAR(calcularTotal())}</b>
-              </div>
+          </div>
+        ))}
+      </div>
+            {/* Resumen dinámico */}
+      {(() => {
+        const total = calcularTotal();
+        const sumatoria = sumaPagos(pagosDraft);
+        const diferencia = total - sumatoria;      // >0 falta, <0 sobra
+        const pendiente = Math.max(diferencia, 0); // lo que falta cobrar
+        const vueltoUI = Math.max(-diferencia, 0); // lo que hay que devolver
 
-              <div className="mt-3 space-y-2">
-                {MEDIOS.map((m) => (
-                  <div key={m} className="flex items-center gap-3">
-                    <label className="w-24">{m}</label>
-                    <input
-                      type="number"
-                      min={0}
-                      step="1"
-                      inputMode="numeric"
-                      className="flex-1 border rounded-md p-2"
-                      value={pagosDraft[m] ? pagosDraft[m] : ""}
-                      onChange={(e) =>
-                        setPagosDraft((prev) => ({
-                          ...prev,
-                          [m]: Number(e.target.value) || 0,
-                        }))
-                      }
-                    />
-                  </div>
-                ))}
-              </div>
+        return (
+          <div
+            style={{
+              marginTop: 10,
+              paddingTop: 8,
+              borderTop: "1px solid #cd2c2cff",
+              fontSize: 14,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: 2,
+              }}
+            >
+              <span>Sumatoria</span>
+              <span>${fmtAR(sumatoria)}</span>
+            </div>
 
-              {/* Resumen numérico */}
-              {(() => {
-                const total = calcularTotal();
-                const sumatoria = sumaPagos(pagosDraft);
-                const pendiente = Math.max(0, total - sumatoria);
-                const vueltoUI = Math.max(0, sumatoria - total);
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: 2,
+                color: pendiente > 0 ? "#b91c1c" : "#555",
+                fontWeight: pendiente > 0 ? "bold" : "normal",
+              }}
+            >
+              <span>Pendiente</span>
+              <span>${fmtAR(pendiente)}</span>
+            </div>
 
-                return (
-                  <div className="mt-3 border-t pt-2 text-sm">
-                    <div
-                      className={`flex justify-between ${
-                        sumatoria > 0
-                          ? "text-green-700 font-semibold"
-                          : "text-gray-500"
-                      }`}
-                    >
-                      <span>Sumatoria</span>
-                      <span>${fmtAR(sumatoria)}</span>
-                    </div>
-
-                    <div
-                      className={`flex justify-between ${
-                        pendiente > 0
-                          ? "text-red-600 font-semibold"
-                          : "text-gray-500"
-                      }`}
-                    >
-                      <span>Pendiente</span>
-                      <span>${fmtAR(pendiente)}</span>
-                    </div>
-
-                    <div
-                      className={`flex justify-between ${
-                        vueltoUI > 0
-                          ? "text-blue-600 font-semibold"
-                          : "text-gray-500"
-                      }`}
-                    >
-                      <span>Vuelto</span>
-                      <span>${fmtAR(vueltoUI)}</span>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              <div className="mt-4 flex flex-wrap gap-2 justify-end">
-                <button
-                  className="px-3 py-2 rounded-md border"
-                  onClick={() => setPagosDraft({ ...estadoVacioPagos })}
-                >
-                  Borrar
-                </button>
-                <button
-                  className="px-3 py-2 rounded-md border"
-                  onClick={() =>
-                    setPagosDraft({
-                      ...estadoVacioPagos,
-                      Efectivo: calcularTotal(),
-                    })
-                  }
-                >
-                  Efectivo = Total
-                </button>
-                <button
-                  className="px-3 py-2 rounded-md border"
-                  onClick={cancelarCobro}
-                >
-                  Cancelar
-                </button>
-                <button
-                  className="px-3 py-2 rounded-md bg-green-600 text-white"
-                  onClick={confirmarCobro}
-                >
-                  Confirmar
-                </button>
-              </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                color: vueltoUI > 0 ? "#1d4ed8" : "#555",
+                fontWeight: vueltoUI > 0 ? "bold" : "normal",
+              }}
+            >
+              <span>Vuelto</span>
+              <span>${fmtAR(vueltoUI)}</span>
             </div>
           </div>
-        )}
+        );
+      })()}
 
-        {/* ========= MODAL CIERRE CON CONTEO ========= */}
-                {/* ========= MODAL CIERRE CON CONTEO ========= */}
-        {cierreAbierto && resumenCorte && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div
-              className="absolute inset-0 bg-black/50"
-              onClick={() => setCierreAbierto(false)}
-            />
-            <div className="relative z-10 w-[95%] max-w-2xl bg-white rounded-xl shadow-xl border border-gray-200 p-4">
-              <h3 className="text-lg font-semibold text-center">
-                Cierre de caja con conteo
-              </h3>
-              <div className="text-xs text-gray-600 text-center mt-1">
-                Desde: <b>{resumenCorte.desdeISO}</b> — Hasta:{" "}
-                <b>{resumenCorte.hastaISO}</b> — Tickets:{" "}
-                <b>{resumenCorte.cantidadVentas}</b>
-              </div>
-        {/* ========= MODAL RESUMEN DE VENTA ========= */}
-        {resumenVenta && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div
-              className="absolute inset-0 bg-black/50"
-              onClick={() => setResumenVenta(null)}
-            />
-            <div className="relative z-10 w-[95%] max-w-md bg-white rounded-xl shadow-xl border border-gray-500 p-4">
-              <h3 className="text-lg font-semibold text-center mb-2">
-                Venta N° {resumenVenta.numeroVenta}
-              </h3>
 
-              {/* Fecha / hora */}
-              {resumenVenta.ventas.length > 0 && (
-                <div className="text-xs text-gray-600 text-center mb-2">
-                  <div>
-                    Fecha: <b>{resumenVenta.ventas[0].fecha}</b> — Hora:{" "}
-                    <b>{resumenVenta.ventas[0].hora}</b>
-                  </div>
-                  <div>
-                    Lugar de consumo:{" "}
-                    <b>{resumenVenta.ventas[0].lugarConsumo}</b>
-                  </div>
-                </div>
+       {/* Botones (modal de cobro) */}
+      <div
+        style={{
+          marginTop: 12,
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: 8,
+          flexWrap: "wrap",
+        }}
+      >
+        <Boton
+          bg="#e9e1d7"
+          color="#12860c"
+          hoverBg="#12860c"
+          hoverColor="#e9e1d7"
+          onClick={() => setPagosDraft({ ...estadoVacioPagos })}
+        >
+          Borrar
+        </Boton>
+
+        <Boton
+          bg="#e9e1d7"
+          color="#12860c"
+          hoverBg="#12860c"
+          hoverColor="#e9e1d7"
+          onClick={() =>
+            setPagosDraft({
+              ...estadoVacioPagos,
+              Efectivo: calcularTotal(),
+            })
+          }
+        >
+          Efectivo = Total
+        </Boton>
+
+        <Boton
+          bg="#e9e1d7"
+          color="#12860c"
+          hoverBg="#12860c"
+          hoverColor="#e9e1d7"
+          onClick={cancelarCobro}
+        >
+          Cancelar
+        </Boton>
+
+        <Boton
+          bg="#e9e1d7"
+          color="#12860c"
+          hoverBg="#12860c"
+          hoverColor="#e9e1d7"
+          onClick={confirmarCobro}
+        >
+          Confirmar
+        </Boton>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* ========= MODAL CIERRE CON CONTEO ========= */}
+{cierreAbierto && resumenCorte && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div
+      className="absolute inset-0 bg-black/50"
+      onClick={() => setCierreAbierto(false)}
+    />
+    <div className="relative z-10 w-[95%] max-w-2xl bg-white rounded-xl shadow-xl border border-gray-200 p-4">
+      <h3 className="text-lg font-semibold text-center">
+        Cierre de caja con conteo
+      </h3>
+      <div className="text-xs text-gray-600 text-center mt-1">
+        Desde: <b>{resumenCorte.desdeISO}</b> — Hasta:{" "}
+        <b>{resumenCorte.hastaISO}</b> — Tickets:{" "}
+        <b>{resumenCorte.cantidadVentas}</b>
+      </div>
+
+      {/* Totales del sistema */}
+      <div className="mt-3">
+        <h4 className="font-semibold text-sm">Totales del sistema</h4>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+          {mediosPagoLista.map((mp) => (
+            <div
+              key={mp}
+              className="flex justify-between border rounded p-2"
+            >
+              <span>{mp}</span>
+              <span>
+                ${fmtAR(resumenCorte.totalesPorMedio[mp] ?? 0)}
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="mt-2 text-sm flex justify-between font-semibold">
+          <span>Total general</span>
+          <span>${fmtAR(resumenCorte.totalGeneral)}</span>
+        </div>
+      </div>
+
+      {/* Efectivo */}
+      <div className="mt-4">
+        <h4 className="font-semibold text-sm">
+          Efectivo (cantidades de billetes)
+        </h4>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {billetesDefs.map(({ k, l }) => (
+            <label key={k} className="text-sm">
+              <span className="mr-2">{l}</span>
+              <input
+                type="number"
+                min={0}
+                inputMode="numeric"
+                className="w-24 border rounded p-1"
+                value={billetes[k] ?? ""}
+                onChange={(e) =>
+                  setBilletes((prev) => ({
+                    ...prev,
+                    [k]: e.target.value,
+                  }))
+                }
+                placeholder="cant."
+              />
+            </label>
+          ))}
+        </div>
+        <div className="mt-2 text-sm flex justify-between">
+          <span>Total efectivo contado</span>
+          <span className="font-semibold">
+            ${fmtAR(totalEfectivoContado())}
+          </span>
+        </div>
+      </div>
+
+      {/* Cuentas */}
+      <div className="mt-4">
+        <h4 className="font-semibold text-sm">Cuentas</h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <label className="text-sm">
+            <span className="mr-2">Bica</span>
+            <input
+              type="number"
+              min={0}
+              inputMode="numeric"
+              className="w-full border rounded p-1"
+              value={cuentas.bica}
+              onChange={(e) =>
+                setCuentas((prev) => ({
+                  ...prev,
+                  bica: e.target.value,
+                }))
+              }
+              placeholder="$"
+            />
+          </label>
+          <label className="text-sm">
+            <span className="mr-2">MP</span>
+            <input
+              type="number"
+              min={0}
+              inputMode="numeric"
+              className="w-full border rounded p-1"
+              value={cuentas.mp}
+              onChange={(e) =>
+                setCuentas((prev) => ({
+                  ...prev,
+                  mp: e.target.value,
+                }))
+              }
+              placeholder="$"
+            />
+          </label>
+          <label className="text-sm">
+            <span className="mr-2">Macro</span>
+            <input
+              type="number"
+              min={0}
+              inputMode="numeric"
+              className="w-full border rounded p-1"
+              value={cuentas.macro}
+              onChange={(e) =>
+                setCuentas((prev) => ({
+                  ...prev,
+                  macro: e.target.value,
+                }))
+              }
+              placeholder="$"
+            />
+          </label>
+        </div>
+      </div>
+
+      {/* Resumen global */}
+      <div className="mt-4 border rounded p-3">
+        <h4 className="font-semibold text-sm mb-2">Resumen global</h4>
+        <div className="flex justify-between text-sm">
+          <span>Total del sistema</span>
+          <span>${fmtAR(resumenCorte.totalGeneral)}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span>Total contado (Efvo + MP + Cuentas)</span>
+          <span>
+            $
+            {fmtAR(
+              totalEfectivoContado() +
+                Number(cuentas.mp || 0) +
+                totalCuentasBicaMacroContado()
+            )}
+          </span>
+        </div>
+        <div
+          className={`flex justify-between text-sm ${
+            totalEfectivoContado() +
+              Number(cuentas.mp || 0) +
+              totalCuentasBicaMacroContado() -
+              resumenCorte.totalGeneral ===
+            0
+              ? "text-green-700"
+              : "text-red-700"
+          }`}
+        >
+          <span>
+            <b>Diferencia (contado - sistema)</b>
+          </span>
+          <span>
+            <b>
+              $
+              {fmtAR(
+                totalEfectivoContado() +
+                  Number(cuentas.mp || 0) +
+                  totalCuentasBicaMacroContado() -
+                  resumenCorte.totalGeneral
               )}
+            </b>
+          </span>
+        </div>
+      </div>
 
-              {/* Productos */}
-              <div className="mt-2 border-t pt-2">
-                <h4 className="text-sm font-semibold mb-1">
-                  Detalle de productos
-                </h4>
-                <ul className="text-sm space-y-1 max-h-48 overflow-auto">
-                  {resumenVenta.ventas.map((v, idx) => (
-                    <li
-                      key={idx}
-                      className="flex flex-col border-b last:border-b-0 pb-1"
-                    >
-                      <div className="flex justify-between">
-                        <span>
-                          {v.cantidad}× {v.producto}
-                        </span>
-                        <span>${fmtAR(v.cantidad * v.precio)}</span>
-                      </div>
-                      {v.mensajeTicket && (
-                        <span className="text-xs text-gray-600">
-                          &gt; {v.mensajeTicket}
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+      <div className="mt-4 flex flex-wrap gap-2 justify-end">
+        <button
+          className="px-3 py-2 rounded-md border"
+          onClick={() => {
+            setCierreAbierto(false);
+            setResumenCorte(null);
+          }}
+        >
+          Cancelar
+        </button>
+
+        <button
+          className="px-3 py-2 rounded-md bg-gray-800 text-white"
+          onClick={confirmarCierreConConteo}
+        >
+          Confirmar y cerrar período
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* ========= MODAL RESUMEN DE VENTA ========= */}
+{resumenVenta && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div
+      className="absolute inset-0 bg-black/50"
+      onClick={() => setResumenVenta(null)}
+    />
+    <div className="relative z-10 w-[95%] max-w-md bg-white rounded-xl shadow-xl border border-gray-500 p-4">
+      <h3 className="text-lg font-semibold text-center mb-2">
+        Venta N° {resumenVenta.numeroVenta}
+      </h3>
+
+      {/* Fecha / hora */}
+      {resumenVenta.ventas.length > 0 && (
+        <div className="text-xs text-gray-600 text-center mb-2">
+          <div>
+            Fecha: <b>{resumenVenta.ventas[0].fecha}</b> — Hora:{" "}
+            <b>{resumenVenta.ventas[0].hora}</b>
+          </div>
+          <div>
+            Lugar de consumo:{" "}
+            <b>{resumenVenta.ventas[0].lugarConsumo}</b>
+          </div>
+        </div>
+      )}
+
+      {/* Productos */}
+      <div className="mt-2 border-t pt-2">
+        <h4 className="text-sm font-semibold mb-1">
+          Detalle de productos
+        </h4>
+        <ul className="text-sm space-y-1 max-h-48 overflow-auto">
+          {resumenVenta.ventas.map((v, idx) => (
+            <li
+              key={idx}
+              className="flex flex-col border-b last:border-b-0 pb-1"
+            >
+              <div className="flex justify-between">
+                <span>
+                  {v.cantidad}× {v.producto}
+                </span>
+                <span>${fmtAR(v.cantidad * v.precio)}</span>
               </div>
+              {v.mensajeTicket && (
+                <span className="text-xs text-gray-600">
+                  &gt; {v.mensajeTicket}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
 
-              {/* Totales y pagos */}
-              <div className="mt-3 border-t pt-2 text-sm space-y-1">
-                <div className="flex justify-between font-semibold">
-                  <span>Total</span>
-                  <span>${fmtAR(resumenVenta.total)}</span>
-                </div>
+      {/* Totales y pagos */}
+      <div className="mt-3 border-t pt-2 text-sm space-y-1">
+        <div className="flex justify-between font-semibold">
+          <span>Total</span>
+          <span>${fmtAR(resumenVenta.total)}</span>
+        </div>
 
-                {resumenVenta.vuelto > 0 && (
-                  <div className="flex justify-between text-blue-700 font-semibold">
-                    <span>Vuelto</span>
-                    <span>${fmtAR(resumenVenta.vuelto)}</span>
-                  </div>
-                )}
-
-                <div className="mt-2">
-                  <h4 className="text-sm font-semibold mb-1">Medios de pago</h4>
-                  <div className="space-y-1">
-                    {MEDIOS.filter(
-                      (m) => (resumenVenta.pagos[m] || 0) > 0
-                    ).map((m) => (
-                      <div
-                        key={m}
-                        className="flex justify-between text-sm"
-                      >
-                        <span>{m}</span>
-                        <span>${fmtAR(resumenVenta.pagos[m] || 0)}</span>
-                      </div>
-                    ))}
-
-                    {MEDIOS.every(
-                      (m) => (resumenVenta.pagos[m] || 0) === 0
-                    ) && (
-                      <div className="text-xs text-gray-500">
-                        (Sin detalle de medios de pago)
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4 flex justify-end gap-2">
-                <button
-                  className="px-3 py-2 rounded-md border"
-                  onClick={() => setResumenVenta(null)}
-                >
-                  Cerrar
-                </button>
-              </div>
-            </div>
+        {resumenVenta.vuelto > 0 && (
+          <div className="flex justify-between text-blue-700 font-semibold">
+            <span>Vuelto</span>
+            <span>${fmtAR(resumenVenta.vuelto)}</span>
           </div>
         )}
 
-              {/* Totales del sistema */}
-              <div className="mt-3">
-                <h4 className="font-semibold text-sm">Totales del sistema</h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
-                  {mediosPagoLista.map((mp) => (
-                    <div
-                      key={mp}
-                      className="flex justify-between border rounded p-2"
-                    >
-                      <span>{mp}</span>
-                      <span>
-                        ${fmtAR(resumenCorte.totalesPorMedio[mp] ?? 0)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-2 text-sm flex justify-between font-semibold">
-                  <span>Total general</span>
-                  <span>${fmtAR(resumenCorte.totalGeneral)}</span>
-                </div>
+        <div className="mt-2">
+          <h4 className="text-sm font-semibold mb-1">Medios de pago</h4>
+          <div className="space-y-1">
+            {MEDIOS.filter(
+              (m) => (resumenVenta.pagos[m] || 0) > 0
+            ).map((m) => (
+              <div
+                key={m}
+                className="flex justify-between text-sm"
+              >
+                <span>{m}</span>
+                <span>${fmtAR(resumenVenta.pagos[m] || 0)}</span>
               </div>
+            ))}
 
-              {/* Efectivo */}
-              <div className="mt-4">
-                <h4 className="font-semibold text-sm">
-                  Efectivo (cantidades de billetes)
-                </h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {billetesDefs.map(({ k, l }) => (
-                    <label key={k} className="text-sm">
-                      <span className="mr-2">{l}</span>
-                      <input
-                        type="number"
-                        min={0}
-                        inputMode="numeric"
-                        className="w-24 border rounded p-1"
-                        value={billetes[k] ?? ""}
-                        onChange={(e) =>
-                          setBilletes((prev) => ({
-                            ...prev,
-                            [k]: e.target.value,
-                          }))
-                        }
-                        placeholder="cant."
-                      />
-                    </label>
-                  ))}
-                </div>
-                <div className="mt-2 text-sm flex justify-between">
-                  <span>Total efectivo contado</span>
-                  <span className="font-semibold">
-                    ${fmtAR(totalEfectivoContado())}
-                  </span>
-                </div>
+            {MEDIOS.every(
+              (m) => (resumenVenta.pagos[m] || 0) === 0
+            ) && (
+              <div className="text-xs text-gray-500">
+                (Sin detalle de medios de pago)
               </div>
-
-              {/* Cuentas */}
-              <div className="mt-4">
-                <h4 className="font-semibold text-sm">Cuentas</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                  <label className="text-sm">
-                    <span className="mr-2">Bica</span>
-                    <input
-                      type="number"
-                      min={0}
-                      inputMode="numeric"
-                      className="w-full border rounded p-1"
-                      value={cuentas.bica}
-                      onChange={(e) =>
-                        setCuentas((prev) => ({
-                          ...prev,
-                          bica: e.target.value,
-                        }))
-                      }
-                      placeholder="$"
-                    />
-                  </label>
-                  <label className="text-sm">
-                    <span className="mr-2">MP</span>
-                    <input
-                      type="number"
-                      min={0}
-                      inputMode="numeric"
-                      className="w-full border rounded p-1"
-                      value={cuentas.mp}
-                      onChange={(e) =>
-                        setCuentas((prev) => ({
-                          ...prev,
-                          mp: e.target.value,
-                        }))
-                      }
-                      placeholder="$"
-                    />
-                  </label>
-                  <label className="text-sm">
-                    <span className="mr-2">Macro</span>
-                    <input
-                      type="number"
-                      min={0}
-                      inputMode="numeric"
-                      className="w-full border rounded p-1"
-                      value={cuentas.macro}
-                      onChange={(e) =>
-                        setCuentas((prev) => ({
-                          ...prev,
-                          macro: e.target.value,
-                        }))
-                      }
-                      placeholder="$"
-                    />
-                  </label>
-                </div>
-              </div>
-
-              {/* Resumen global */}
-              <div className="mt-4 border rounded p-3">
-                <h4 className="font-semibold text-sm mb-2">Resumen global</h4>
-                <div className="flex justify-between text-sm">
-                  <span>Total del sistema</span>
-                  <span>${fmtAR(resumenCorte.totalGeneral)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Total contado (Efvo + MP + Cuentas)</span>
-                  <span>
-                    $
-                    {fmtAR(
-                      totalEfectivoContado() +
-                        Number(cuentas.mp || 0) +
-                        totalCuentasBicaMacroContado()
-                    )}
-                  </span>
-                </div>
-                <div
-                  className={`flex justify-between text-sm ${
-                    totalEfectivoContado() +
-                      Number(cuentas.mp || 0) +
-                      totalCuentasBicaMacroContado() -
-                      resumenCorte.totalGeneral ===
-                    0
-                      ? "text-green-700"
-                      : "text-red-700"
-                  }`}
-                >
-                  <span>
-                    <b>Diferencia (contado - sistema)</b>
-                  </span>
-                  <span>
-                    <b>
-                      $
-                      {fmtAR(
-                        totalEfectivoContado() +
-                          Number(cuentas.mp || 0) +
-                          totalCuentasBicaMacroContado() -
-                          resumenCorte.totalGeneral
-                      )}
-                    </b>
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-2 justify-end">
-                <button
-                  className="px-3 py-2 rounded-md border"
-                  onClick={() => {
-                    setCierreAbierto(false);
-                    setResumenCorte(null);
-                  }}
-                >
-                  Cancelar
-                </button>
-
-                <button
-                  className="px-3 py-2 rounded-md bg-gray-800 text-white"
-                  onClick={confirmarCierreConConteo}
-                >
-                  Confirmar y cerrar período
-                </button>
-              </div>
-            </div>
+            )}
           </div>
-        )}
+        </div>
+      </div>
+
+      <div className="mt-4 flex justify-end gap-2">
+        <button
+          className="px-3 py-2 rounded-md border"
+          onClick={() => setResumenVenta(null)}
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
       </div>
     </>
   );
