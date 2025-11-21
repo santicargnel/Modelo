@@ -28,6 +28,13 @@ type LineaSeleccion = {
   mods: Partial<Record<ModificadorKey, boolean>>;
   qty: number; // 👈 cantidad en la misma línea
 };
+type ResumenVentaModal = {
+  numeroVenta: number;
+  ventas: Venta[];
+  pagos: Record<MedioPago, number>;
+  total: number;
+  vuelto: number;
+};
 
 /** Catálogo: por producto, qué modificadores están disponibles */
 const MODS_POR_PRODUCTO: Record<number, ModificadorDef[]> = {
@@ -417,6 +424,7 @@ const Evento14Diciembre = () => {
 
   const [cierreAbierto, setCierreAbierto] = useState(false);
   const [resumenCorte, setResumenCorte] = useState<ResumenCorte | null>(null);
+const [resumenVenta, setResumenVenta] = useState<ResumenVentaModal | null>(null);
 
   type BilleteKey =
     | "b100"
@@ -552,10 +560,20 @@ const totalEfectivoContado = () =>
       createdAtISO,
     }));
 
-    if (vuelto > 0) alert(`Vuelto: $${fmtAR(vuelto)}`);
+        if (vuelto > 0) alert(`Vuelto: $${fmtAR(vuelto)}`);
+
+    // 👉 Guardamos info para el recuadro/resumen
+    setResumenVenta({
+      numeroVenta: estado.numeroVentaActual,
+      ventas,
+      pagos,
+      total,
+      vuelto,
+    });
 
     // Ticket con desglose
     imprimirTicket(ventas, pagos);
+
 
     // Guardar y avanzar; cerrar modal
     // ...dentro de confirmarCobro(), justo antes de setCobroAbierto(false):
@@ -2468,6 +2486,110 @@ const precioTotal = precioUnit * (linea.qty || 1);
                 <b>{resumenCorte.hastaISO}</b> — Tickets:{" "}
                 <b>{resumenCorte.cantidadVentas}</b>
               </div>
+        {/* ========= MODAL RESUMEN DE VENTA ========= */}
+        {resumenVenta && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div
+              className="absolute inset-0 bg-black/50"
+              onClick={() => setResumenVenta(null)}
+            />
+            <div className="relative z-10 w-[95%] max-w-md bg-white rounded-xl shadow-xl border border-gray-500 p-4">
+              <h3 className="text-lg font-semibold text-center mb-2">
+                Venta N° {resumenVenta.numeroVenta}
+              </h3>
+
+              {/* Fecha / hora */}
+              {resumenVenta.ventas.length > 0 && (
+                <div className="text-xs text-gray-600 text-center mb-2">
+                  <div>
+                    Fecha: <b>{resumenVenta.ventas[0].fecha}</b> — Hora:{" "}
+                    <b>{resumenVenta.ventas[0].hora}</b>
+                  </div>
+                  <div>
+                    Lugar de consumo:{" "}
+                    <b>{resumenVenta.ventas[0].lugarConsumo}</b>
+                  </div>
+                </div>
+              )}
+
+              {/* Productos */}
+              <div className="mt-2 border-t pt-2">
+                <h4 className="text-sm font-semibold mb-1">
+                  Detalle de productos
+                </h4>
+                <ul className="text-sm space-y-1 max-h-48 overflow-auto">
+                  {resumenVenta.ventas.map((v, idx) => (
+                    <li
+                      key={idx}
+                      className="flex flex-col border-b last:border-b-0 pb-1"
+                    >
+                      <div className="flex justify-between">
+                        <span>
+                          {v.cantidad}× {v.producto}
+                        </span>
+                        <span>${fmtAR(v.cantidad * v.precio)}</span>
+                      </div>
+                      {v.mensajeTicket && (
+                        <span className="text-xs text-gray-600">
+                          &gt; {v.mensajeTicket}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Totales y pagos */}
+              <div className="mt-3 border-t pt-2 text-sm space-y-1">
+                <div className="flex justify-between font-semibold">
+                  <span>Total</span>
+                  <span>${fmtAR(resumenVenta.total)}</span>
+                </div>
+
+                {resumenVenta.vuelto > 0 && (
+                  <div className="flex justify-between text-blue-700 font-semibold">
+                    <span>Vuelto</span>
+                    <span>${fmtAR(resumenVenta.vuelto)}</span>
+                  </div>
+                )}
+
+                <div className="mt-2">
+                  <h4 className="text-sm font-semibold mb-1">Medios de pago</h4>
+                  <div className="space-y-1">
+                    {MEDIOS.filter(
+                      (m) => (resumenVenta.pagos[m] || 0) > 0
+                    ).map((m) => (
+                      <div
+                        key={m}
+                        className="flex justify-between text-sm"
+                      >
+                        <span>{m}</span>
+                        <span>${fmtAR(resumenVenta.pagos[m] || 0)}</span>
+                      </div>
+                    ))}
+
+                    {MEDIOS.every(
+                      (m) => (resumenVenta.pagos[m] || 0) === 0
+                    ) && (
+                      <div className="text-xs text-gray-500">
+                        (Sin detalle de medios de pago)
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 flex justify-end gap-2">
+                <button
+                  className="px-3 py-2 rounded-md border"
+                  onClick={() => setResumenVenta(null)}
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
               {/* Totales del sistema */}
               <div className="mt-3">
