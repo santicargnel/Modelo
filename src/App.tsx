@@ -1908,7 +1908,7 @@ ventasDelTicket.forEach((v) => {
   return (
     <>
       <div className="w-full p-4 md:p-6 lg:p-8 bg-white rounded-lg shadow-md">
-       <h1 className="titulo">CARRIBAR SAN JORGEE</h1>
+       <h1 className="titulo">CARRIBAR SAN JORGE</h1>
 
 
 
