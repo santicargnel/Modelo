@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
-
-/* ========================= Tipos ========================= */
-type MedioPago = "Efectivo" | "Débito" | "Crédito" | "QR" | "Cuenta";
+import { useEffect, useState } from "react"; 
+import GestionProductos from "./components/ui/GestionProductos"; 
+/* ========================= Tipos ========================= */ 
+type MedioPago = "Efectivo" | "Débito" | "Crédito" | "QR" | "Cuenta"; 
 export type LugarConsumo = "Retira" | "Delivery" | "Aca";
 
 /* ==== Modificadores (definición) ==== */
@@ -35,6 +35,19 @@ type ResumenVentaModal = {
   total: number;
   vuelto: number;
 };
+export type ProductoGestion = {
+  id: number;
+  sku: string;
+  descripcion: string;
+  categoria: string;
+  costo: number;
+  stock: number;
+  venta: number;
+  obs: string;
+  activo: boolean;
+};
+
+
 
 /** Catálogo: por producto, qué modificadores están disponibles */
 const MODS_POR_PRODUCTO: Record<number, ModificadorDef[]> = {
@@ -394,10 +407,37 @@ const Boton = ({
 
 // ========================= Componente =========================
 const Evento14Diciembre = () => {
+const [mostrarGestion, setMostrarGestion] = useState(false);
+const [productosGestion, setProductosGestion] = useState<ProductoGestion[]>(() => {
+  try {
+    const raw = localStorage.getItem("productosGestion");
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    console.error("Error leyendo productosGestion", e);
+  }
 
-  // Estado principal + persistencia
-  // Estado principal + persistencia
-  // Estado principal + persistencia
+  // Carga inicial opcional desde tu catálogo actual:
+  return productos.map((p) => ({
+    id: p.id,
+    sku: String(p.id),
+    descripcion: p.nombre,
+    categoria: "Hamburguesas",
+    costo: 0,
+    stock: 0,
+    venta: p.precio,
+    obs: "",
+    activo: true,
+  }));
+});
+
+useEffect(() => {
+  try {
+    localStorage.setItem("productosGestion", JSON.stringify(productosGestion));
+  } catch (e) {
+    console.error("Error guardando productosGestion", e);
+  }
+}, [productosGestion]);
+
   const [estado, setEstado] = useState<Estado>(() => {
     try {
       const raw = localStorage.getItem("estado");
@@ -518,6 +558,11 @@ const billetesDefs: { k: BilleteKey; l: string }[] = [
   { k: "b10000", l: "$10.000" },
   { k: "b20000", l: "$20.000" },
 ];
+const cuentasDefs: Array<{ k: "bica" | "mp" | "macro"; label: string }> = [
+  { k: "bica", label: "QR (Bica)" },
+  { k: "mp", label: "Transferencia (MP)" },
+  { k: "macro", label: "Macro" },
+];
 
 
 const totalEfectivoContado = () =>
@@ -605,13 +650,7 @@ const totalEfectivoContado = () =>
         if (vuelto > 0) alert(`Vuelto: $${fmtAR(vuelto)}`);
 
     // 👉 Guardamos info para el recuadro/resumen
-    setResumenVenta({
-      numeroVenta: estado.numeroVentaActual,
-      ventas,
-      pagos,
-      total,
-      vuelto,
-    });
+  
 
     // Ticket con desglose
     imprimirTicket(ventas, pagos);
@@ -1659,9 +1698,44 @@ ventasDelTicket.forEach((v) => {
     }
     abrirCobro();
   };
+// Formatea ISO → DD.MM.YYYY HH:MM
+const fmtFecha = (iso: string) => {
+  const d = new Date(iso);
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
+  return `${dd}.${mm}.${yyyy} ${hh}:${mi}`;
+};
+
 
   const abrirCierreConConteo = () => {
-    const desdeISO = estado.ultimoCierreISO || "1970-01-01T00:00:00.000Z";
+    // Encontrar primera y última venta NO anulada
+const ventasVigentes = estado.ventas.filter((v) => !v.anulada);
+
+if (ventasVigentes.length === 0) {
+  alert("No hay ventas confirmadas.");
+  return;
+}
+
+const primera = ventasVigentes[0];
+const ultima = ventasVigentes[ventasVigentes.length - 1];
+
+// función para formatear fecha al estilo DD.MM.YYYY HH:MM
+const fmtFecha = (iso: string) => {
+  const d = new Date(iso);
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
+  return `${dd}.${mm}.${yyyy} ${hh}:${mi}`;
+};
+
+const desdeISO = primera.createdAtISO;
+const hastaISO = ultima.createdAtISO;
+
 
     // Pagos dentro del período
     const pagosPeriodo = estado.pagos.filter((p) => p.createdAtISO > desdeISO);
@@ -1943,16 +2017,6 @@ ventasDelTicket.forEach((v) => {
       .join(" | ");
   };
 
-  const imprimirUltimoTicket = () => {
-    const ultimasVentas = estado.ventas.filter(
-      (v) => v.numeroVenta === estado.numeroVentaActual - 1
-    );
-    if (ultimasVentas.length === 0) {
-      alert("No hay ticket anterior.");
-      return;
-    }
-    imprimirTicket(ultimasVentas);
-  };
   const borrarRegistro = () => {
     localStorage.removeItem("estado");
     setEstado(initialState);
@@ -1967,8 +2031,68 @@ ventasDelTicket.forEach((v) => {
   // Titulo en pantalla
   return (
     <>
-      <div className="w-full p-4 md:p-6 lg:p-8 bg-white rounded-lg shadow-md">
+      <div>
        <h1 className="titulo">CARRIBAR SAN JORGE</h1>
+
+{mostrarGestion && (
+  <div
+    style={{
+      fontFamily: "Montserrat, sans-serif",
+      position: "fixed",
+      inset: 0,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 9999,
+      padding: 10,
+    }}
+    onClick={() => setMostrarGestion(false)} // clic afuera cierra
+  >
+    <div
+      onClick={(e) => e.stopPropagation()} // evita cerrar al hacer clic adentro
+      style={{
+        background: "white",
+        width: "100%",
+        maxWidth: "800px", // MODAL ANCHO
+        borderRadius: "10px",
+        border: "1px solid #26608e",
+        padding: "16px",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+        maxHeight: "90vh",
+        overflowY: "auto",
+      }}
+    >
+      <h3
+        style={{
+          fontSize: 18,
+          fontWeight: "bold",
+          textAlign: "center",
+          marginBottom: 12,
+          color: "#26608e",
+        }}
+      >
+        Gestión de Productos
+      </h3>
+
+      {/* Aquí dentro renderizamos el componente */}
+      <GestionProductos
+        productos={productosGestion}
+        setProductos={setProductosGestion}
+      />
+
+      {/* Botón cerrar */}
+      <div style={{ marginTop: 16, textAlign: "right" }}>
+        <button
+          className="btn-base btn-secundario"
+          onClick={() => setMostrarGestion(false)}
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
 
 
@@ -1976,22 +2100,23 @@ ventasDelTicket.forEach((v) => {
   Venta N° {estado.numeroVentaActual}
 </p>
 
-<div className="mb-4 border-4 border-green-600 p-2 rounded-lg">
-  <div className="productos-grid w-full">
-    {productos.map((producto) => (
-      <button
-        key={producto.id}
-        className="producto-btn"
-        onClick={() => seleccionarProducto(producto.id)}
-      >
-        <span className="mr-1">{producto.nombre}</span>
-        <span className="text-red-600 whitespace-nowrap">
-          ${fmtAR(producto.precio)}
-        </span>
-      </button>
-    ))}
-  </div>
+{/* === GRILLA DE PRODUCTOS SIN TAILWIND (estilo original) === */}
+<div className="productos-wrapper"></div>
+<div className="productos-grid">
+  {productos.map((producto) => (
+    <button
+      key={producto.id}
+      className="producto-btn"
+      onClick={() => seleccionarProducto(producto.id)}
+    >
+      <div className="producto-nombre">{producto.nombre}</div>
+      <div className="producto-precio">
+        ${fmtAR(producto.precio)}
+      </div>
+    </button>
+  ))}
 </div>
+
 
 
 <h2 className="subtitulo alto-unico">
@@ -2218,19 +2343,18 @@ const precioTotal = precioUnit * (linea.qty || 1);
       ...
     </div>
   )}
+<button
+  className="btn-base btn-secundario"
+  onClick={() => setMostrarGestion(true)}
+>
+  Gestión de Productos
+</button>
 
   <button
     className="btn-base btn-secundario"
     onClick={descargarRegistro}
   >
     Descargar Registro
-  </button>
-
-  <button
-    className="btn-base btn-secundario"
-    onClick={imprimirUltimoTicket}
-  >
-    Imprimir Ticket Anterior
   </button>
 
   <button
@@ -2592,59 +2716,162 @@ const precioTotal = precioUnit * (linea.qty || 1);
   </div>
 )}
 
-{/* ========= MODAL CIERRE CON CONTEO ========= */}
+{/* ========= MODAL CIERRE CON CONTEO (MISMO FORMATO QUE COBRO) ========= */}
+{/* ========= MODAL CIERRE CON CONTEO (MISMO FORMATO QUE COBRO) ========= */}
 {cierreAbierto && resumenCorte && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center">
+  <div
+    style={{
+      fontFamily: "Montserrat, sans-serif",
+      position: "fixed",
+      inset: 0,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 9999,
+      padding: 10,
+    }}
+    onClick={() => {
+      setCierreAbierto(false);
+      setResumenCorte(null);
+    }}
+  >
+    {/* ✅ MODAL BLANCO INTERNO */}
     <div
-      className="absolute inset-0 bg-black/50"
-      onClick={() => setCierreAbierto(false)}
-    />
-    <div className="relative z-10 w-[95%] max-w-2xl bg-white rounded-xl shadow-xl border border-gray-200 p-4">
-      <h3 className="text-lg font-semibold text-center">
-        Cierre de caja con conteo
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        fontFamily: "Montserrat, sans-serif",
+        background: "white",
+        width: "100%",
+        maxWidth: "720px",
+        borderRadius: "10px",
+        border: "1px solid #d90f0fff",
+        padding: "16px",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+      }}
+    >
+      <h3
+        style={{
+          fontSize: 18,
+          color: "#26608e",
+          fontWeight: "bold",
+          textAlign: "center",
+        }}
+      >
+        CIERRE DE CAJA
       </h3>
-      <div className="text-xs text-gray-600 text-center mt-1">
-        Desde: <b>{resumenCorte.desdeISO}</b> — Hasta:{" "}
-        <b>{resumenCorte.hastaISO}</b> — Tickets:{" "}
+
+      {/* Info período */}
+      <div
+        style={{
+          fontSize: 14,
+          textAlign: "center",
+          marginTop: 4,
+          marginBottom: 8,
+          color: "#26608e",
+          fontWeight: 700,
+        }}
+      >
+        Desde: <b>{fmtFecha(resumenCorte.desdeISO)}</b> — Hasta:{" "}
+        <b>{fmtFecha(resumenCorte.hastaISO)}</b> — Tickets:{" "}
         <b>{resumenCorte.cantidadVentas}</b>
       </div>
 
-      {/* Totales del sistema */}
-      <div className="mt-3">
-        <h4 className="font-semibold text-sm">Totales del sistema</h4>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+      {/* Totales sistema */}
+      <div style={{ marginTop: 16 }}>
+        <h4
+          style={{
+            fontWeight: 700,
+            textAlign: "center",
+            color: "#26608e",
+            fontSize: 16,
+          }}
+        >
+          Totales del sistema
+        </h4>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
+            gap: 8,
+            marginTop: 8,
+            fontSize: 14,
+          }}
+        >
           {mediosPagoLista.map((mp) => (
             <div
               key={mp}
-              className="flex justify-between border rounded p-2"
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                border: "1px solid #a73332",
+                borderRadius: 6,
+                padding: "6px 8px",
+                color: "#26608e",
+                fontWeight: 400,
+              }}
             >
               <span>{mp}</span>
-              <span>
-                ${fmtAR(resumenCorte.totalesPorMedio[mp] ?? 0)}
-              </span>
+              <span>${fmtAR(resumenCorte.totalesPorMedio[mp] ?? 0)}</span>
             </div>
           ))}
         </div>
-        <div className="mt-2 text-sm flex justify-between font-semibold">
+
+        <div
+          style={{
+            marginTop: 8,
+            display: "flex",
+            justifyContent: "space-between",
+            fontWeight: 700,
+            fontSize: 14,
+            color: "#26608e",
+          }}
+        >
           <span>Total general</span>
           <span>${fmtAR(resumenCorte.totalGeneral)}</span>
         </div>
       </div>
 
       {/* Efectivo */}
-      <div className="mt-4">
-        <h4 className="font-semibold text-sm">
+      <div style={{ marginTop: 16 }}>
+        <h4
+          style={{
+            fontWeight: 700,
+            textAlign: "center",
+            color: "#26608e",
+            fontSize: 14,
+          }}
+        >
           Efectivo (cantidades de billetes)
         </h4>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+            gap: 8,
+            marginTop: 8,
+            fontSize: 14,
+            textAlign: "center",
+            color: "#26608e",
+            fontWeight: 700,
+          }}
+        >
           {billetesDefs.map(({ k, l }) => (
-            <label key={k} className="text-sm">
-              <span className="mr-2">{l}</span>
+            <label key={k} style={{ fontSize: 14 }}>
+              <span style={{ marginRight: 6 }}>{l}</span>
               <input
                 type="number"
                 min={0}
                 inputMode="numeric"
-                className="w-24 border rounded p-1"
+                style={{
+                  width: "100%",
+                  padding: 6,
+                  borderRadius: 4,
+                  border: "1px solid #a73332",
+                  marginTop: 8,
+                }}
                 value={billetes[k] ?? ""}
                 onChange={(e) =>
                   setBilletes((prev) => ({
@@ -2657,155 +2884,243 @@ const precioTotal = precioUnit * (linea.qty || 1);
             </label>
           ))}
         </div>
-        <div className="mt-2 text-sm flex justify-between">
-          <span>Total efectivo contado</span>
-          <span className="font-semibold">
-            ${fmtAR(totalEfectivoContado())}
-          </span>
+
+        <div
+          style={{
+            marginTop: 8,
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: 14,
+            color: "#26608e",
+            fontWeight: 700,
+          }}
+        >
+          <span>Total efectivo</span>
+          <span>${fmtAR(totalEfectivoContado())}</span>
         </div>
       </div>
 
       {/* Cuentas */}
-      <div className="mt-4">
-        <h4 className="font-semibold text-sm">Cuentas</h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-          <label className="text-sm">
-            <span className="mr-2">Bica</span>
-            <input
-              type="number"
-              min={0}
-              inputMode="numeric"
-              className="w-full border rounded p-1"
-              value={cuentas.bica}
-              onChange={(e) =>
-                setCuentas((prev) => ({
-                  ...prev,
-                  bica: e.target.value,
-                }))
-              }
-              placeholder="$"
-            />
-          </label>
-          <label className="text-sm">
-            <span className="mr-2">MP</span>
-            <input
-              type="number"
-              min={0}
-              inputMode="numeric"
-              className="w-full border rounded p-1"
-              value={cuentas.mp}
-              onChange={(e) =>
-                setCuentas((prev) => ({
-                  ...prev,
-                  mp: e.target.value,
-                }))
-              }
-              placeholder="$"
-            />
-          </label>
-          <label className="text-sm">
-            <span className="mr-2">Macro</span>
-            <input
-              type="number"
-              min={0}
-              inputMode="numeric"
-              className="w-full border rounded p-1"
-              value={cuentas.macro}
-              onChange={(e) =>
-                setCuentas((prev) => ({
-                  ...prev,
-                  macro: e.target.value,
-                }))
-              }
-              placeholder="$"
-            />
-          </label>
+      <div style={{ marginTop: 16 }}>
+        <h4
+          style={{
+            fontWeight: 700,
+            fontSize: 14,
+            textAlign: "center",
+            color: "#26608e",
+          }}
+        >
+          Cuentas
+        </h4>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+            gap: 8,
+            marginTop: 8,
+            fontSize: 14,
+            color: "#26608e",
+            fontWeight: 700,
+          }}
+        >
+          {cuentasDefs.map(({ k, label }) => (
+            <label key={k} style={{ fontSize: 14 }}>
+              <span style={{ marginRight: 6 }}>{label}</span>
+              <input
+                type="number"
+                min={0}
+                inputMode="numeric"
+                style={{
+                  width: "100%",
+                  padding: 6,
+                  borderRadius: 4,
+                  border: "1px solid #a73332",
+                  marginTop: 8,
+                }}
+                value={cuentas[k] ?? ""}
+                onChange={(e) =>
+                  setCuentas((prev) => ({
+                    ...prev,
+                    [k]: e.target.value,
+                  }))
+                }
+                placeholder="$"
+              />
+            </label>
+          ))}
+        </div>
+
+        <div
+          style={{
+            marginTop: 8,
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: 14,
+            color: "#26608e",
+            fontWeight: 700,
+          }}
+        >
+          <span>Total cuentas</span>
+          <span>
+            ${fmtAR(
+              Number(cuentas.bica || 0) +
+                Number(cuentas.mp || 0) +
+                Number(cuentas.macro || 0)
+            )}
+          </span>
         </div>
       </div>
 
-      {/* Resumen global */}
-      <div className="mt-4 border rounded p-3">
-        <h4 className="font-semibold text-sm mb-2">Resumen global</h4>
-        <div className="flex justify-between text-sm">
-          <span>Total del sistema</span>
+      {/* ✅ RESUMEN CAJA (IMPORTANTE: SE CIERRA ACÁ) */}
+      <div
+        style={{
+          marginTop: 8,
+          border: "1px solid #a73332",
+          borderRadius: 8,
+          padding: 10,
+          fontSize: 14,
+          fontFamily: "Montserrat, sans-serif",
+          color: "#26608e",
+          fontWeight: 700,
+          textAlign: "center",
+        }}
+      >
+        <h4 style={{ fontWeight: 700, fontSize: 16, marginBottom: 2 }}>
+          Resumen caja
+        </h4>
+
+        <div
+          style={{
+            display: "flex",
+            fontSize: 15,
+            justifyContent: "space-between",
+            color: "#26608e",
+          }}
+        >
+          <span>Total ventas</span>
           <span>${fmtAR(resumenCorte.totalGeneral)}</span>
         </div>
-        <div className="flex justify-between text-sm">
-          <span>Total contado (Efvo + MP + Cuentas)</span>
+
+        <div
+          style={{
+            display: "flex",
+            fontSize: 15,
+            justifyContent: "space-between",
+            color: "#26608e",
+          }}
+        >
+          <span>Total pagos</span>
           <span>
-            $
-            {fmtAR(
+            ${fmtAR(
               totalEfectivoContado() +
                 Number(cuentas.mp || 0) +
                 totalCuentasBicaMacroContado()
             )}
           </span>
         </div>
-        <div
-          className={`flex justify-between text-sm ${
-            totalEfectivoContado() +
-              Number(cuentas.mp || 0) +
-              totalCuentasBicaMacroContado() -
-              resumenCorte.totalGeneral ===
-            0
-              ? "text-green-700"
-              : "text-red-700"
-          }`}
-        >
-          <span>
-            <b>Diferencia (contado - sistema)</b>
-          </span>
-          <span>
-            <b>
-              $
-              {fmtAR(
-                totalEfectivoContado() +
-                  Number(cuentas.mp || 0) +
-                  totalCuentasBicaMacroContado() -
-                  resumenCorte.totalGeneral
-              )}
-            </b>
-          </span>
-        </div>
-      </div>
 
-      <div className="mt-4 flex flex-wrap gap-2 justify-end">
-        <button
-          className="px-3 py-2 rounded-md border"
+        {(() => {
+          const dif =
+            totalEfectivoContado() +
+            Number(cuentas.mp || 0) +
+            totalCuentasBicaMacroContado() -
+            resumenCorte.totalGeneral;
+
+          const color = dif < 0 ? "#ff2727" : "#12860c";
+
+          return (
+            <div
+              style={{
+                display: "flex",
+                fontSize: 15,
+                justifyContent: "space-between",
+                marginTop: 4,
+                color,
+                fontWeight: 700,
+              }}
+            >
+              <span>Diferencia</span>
+              <span>${fmtAR(dif)}</span>
+            </div>
+          );
+        })()}
+      </div>
+      {/* ✅ FIN RESUMEN CAJA */}
+
+      {/* Botones al pie */}
+      <div
+        style={{
+          marginTop: 12,
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: 8,
+          flexWrap: "wrap",
+        }}
+      >
+        <Boton
+          bg="#e9e1d7"
+          color="#12860c"
+          hoverBg="#12860c"
+          hoverColor="#e9e1d7"
           onClick={() => {
             setCierreAbierto(false);
             setResumenCorte(null);
           }}
         >
           Cancelar
-        </button>
+        </Boton>
 
-        <button
-          className="px-3 py-2 rounded-md bg-gray-800 text-white"
+        <Boton
+          bg="#e9e1d7"
+          color="#12860c"
+          hoverBg="#12860c"
+          hoverColor="#e9e1d7"
           onClick={confirmarCierreConConteo}
         >
-          Confirmar y cerrar período
-        </button>
+          Confirmar cierre
+        </Boton>
       </div>
     </div>
+    {/* ✅ FIN MODAL BLANCO */}
   </div>
 )}
 
-{/* ========= MODAL RESUMEN DE VENTA ========= */}
+{/* ========= MODAL RESUMEN DE VENTA (MISMO FORMATO QUE COBRO) ========= */}
 {resumenVenta && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center">
+  <div
+    style={{
+      fontFamily: "Montserrat, sans-serif",
+      position: "fixed",
+      inset: 0,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 9999,
+      padding: 10,
+    }}
+    onClick={() => setResumenVenta(null)} // clic afuera cierra
+  >
     <div
-      className="absolute inset-0 bg-black/50"
-      onClick={() => setResumenVenta(null)}
-    />
-    <div className="relative z-10 w-[95%] max-w-md bg-white rounded-xl shadow-xl border border-gray-500 p-4">
-      <h3 className="text-lg font-semibold text-center mb-2">
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        background: "white",
+        width: "100%",
+        maxWidth: "420px",
+        borderRadius: "10px",
+        border: "1px solid #555",
+        padding: "16px",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+      }}
+    >
+      <h3 style={{ fontSize: 18, fontWeight: "bold", textAlign: "center", marginBottom: 6 }}>
         Venta N° {resumenVenta.numeroVenta}
       </h3>
 
       {/* Fecha / hora */}
       {resumenVenta.ventas.length > 0 && (
-        <div className="text-xs text-gray-600 text-center mb-2">
+        <div style={{ fontSize: 12, color: "#555", textAlign: "center", marginBottom: 8 }}>
           <div>
             Fecha: <b>{resumenVenta.ventas[0].fecha}</b> — Hora:{" "}
             <b>{resumenVenta.ventas[0].hora}</b>
@@ -2818,26 +3133,25 @@ const precioTotal = precioUnit * (linea.qty || 1);
       )}
 
       {/* Productos */}
-      <div className="mt-2 border-t pt-2">
-        <h4 className="text-sm font-semibold mb-1">
+      <div style={{ marginTop: 8, borderTop: "1px solid #ddd", paddingTop: 8 }}>
+        <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>
           Detalle de productos
         </h4>
-        <ul className="text-sm space-y-1 max-h-48 overflow-auto">
+
+        <ul style={{ fontSize: 14, maxHeight: 180, overflow: "auto", paddingLeft: 16 }}>
           {resumenVenta.ventas.map((v, idx) => (
-            <li
-              key={idx}
-              className="flex flex-col border-b last:border-b-0 pb-1"
-            >
-              <div className="flex justify-between">
+            <li key={idx} style={{ borderBottom: "1px solid #eee", paddingBottom: 4, marginBottom: 4 }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span>
                   {v.cantidad}× {v.producto}
                 </span>
                 <span>${fmtAR(v.cantidad * v.precio)}</span>
               </div>
+
               {v.mensajeTicket && (
-                <span className="text-xs text-gray-600">
+                <div style={{ fontSize: 12, color: "#555" }}>
                   &gt; {v.mensajeTicket}
-                </span>
+                </div>
               )}
             </li>
           ))}
@@ -2845,52 +3159,44 @@ const precioTotal = precioUnit * (linea.qty || 1);
       </div>
 
       {/* Totales y pagos */}
-      <div className="mt-3 border-t pt-2 text-sm space-y-1">
-        <div className="flex justify-between font-semibold">
+      <div style={{ marginTop: 10, borderTop: "1px solid #ddd", paddingTop: 8, fontSize: 14 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700 }}>
           <span>Total</span>
           <span>${fmtAR(resumenVenta.total)}</span>
         </div>
 
         {resumenVenta.vuelto > 0 && (
-          <div className="flex justify-between text-blue-700 font-semibold">
+          <div style={{ display: "flex", justifyContent: "space-between", color: "#1d4ed8", fontWeight: 700 }}>
             <span>Vuelto</span>
             <span>${fmtAR(resumenVenta.vuelto)}</span>
           </div>
         )}
 
-        <div className="mt-2">
-          <h4 className="text-sm font-semibold mb-1">Medios de pago</h4>
-          <div className="space-y-1">
-            {MEDIOS.filter(
-              (m) => (resumenVenta.pagos[m] || 0) > 0
-            ).map((m) => (
-              <div
-                key={m}
-                className="flex justify-between text-sm"
-              >
-                <span>{m}</span>
-                <span>${fmtAR(resumenVenta.pagos[m] || 0)}</span>
-              </div>
-            ))}
+        <div style={{ marginTop: 8 }}>
+          <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>
+            Medios de pago
+          </h4>
 
-            {MEDIOS.every(
-              (m) => (resumenVenta.pagos[m] || 0) === 0
-            ) && (
-              <div className="text-xs text-gray-500">
-                (Sin detalle de medios de pago)
-              </div>
-            )}
-          </div>
+          {MEDIOS.filter((m) => (resumenVenta.pagos[m] || 0) > 0).map((m) => (
+            <div key={m} style={{ display: "flex", justifyContent: "space-between" }}>
+              <span>{m}</span>
+              <span>${fmtAR(resumenVenta.pagos[m] || 0)}</span>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div className="mt-4 flex justify-end gap-2">
-        <button
-          className="px-3 py-2 rounded-md border"
+      {/* Botón cerrar */}
+      <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
+        <Boton
+          bg="#e9e1d7"
+          color="#12860c"
+          hoverBg="#12860c"
+          hoverColor="#e9e1d7"
           onClick={() => setResumenVenta(null)}
         >
           Cerrar
-        </button>
+        </Boton>
       </div>
     </div>
   </div>

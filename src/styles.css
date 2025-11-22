@@ -4,10 +4,26 @@
 /* GRID de productos: 4 columnas en grandes, 2 en chicas */
 .productos-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;              /* espacio entre productos */
-  width: 100%;            /* 👉 CLAVE: ocupa todo el ancho disponible */
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  margin-bottom: 0.5rem;
 }
+
+.producto-nombre {
+  font-size: 18px;
+  font-weight: bold;
+  color: #26608e;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.producto-precio {
+  font-size: 18px;
+  font-weight: bold;
+  color: #ff2727; /* rojo como antes */
+  text-align: center;
+}
+
 
 /* En pantallas chicas: 2 columnas */
 @media (max-width: 768px) {
@@ -49,9 +65,9 @@
   color: #e9e1d7;
   font-size: 2.25rem; /* text-4xl */
   font-weight: bold;
-  padding: 0.5rem;
+  padding: 0.1rem;
   border-radius: 8px;
-  margin-bottom: 0.1rem;
+  margin-bottom: 0.5rem;
 }
 
 /* Venta numero */
@@ -62,7 +78,7 @@
   font-weight: bold;     /* font-bold */
   margin-bottom: 0.5rem; /* mb-2 */
   border: 2px solid #a73332; /* bordes */
-  padding: 0.75rem;      /* p-1 */
+  padding: 0.05rem;      /* p-1 */
   border-radius: 8px; /* rounded-lg */
 }
 .titulo {
@@ -84,8 +100,10 @@ font-family: "Montserrat", sans-serif;
   font-weight: bold;     /* font-bold */
   margin-bottom: 0.5rem; /* mb-2 */
   border: 2px solid #a73332; /* bordes */
-  padding: 0.5rem;      /* p-1 */
+  padding: 0rem;      /* p-1 */
   border-radius: 8px; /* rounded-lg */
+  color: #26608e;
+  
 }
 .lista {
   font-family: "Montserrat", sans-serif; /* tu fuente */
@@ -94,7 +112,7 @@ font-family: "Montserrat", sans-serif;
   font-size: 1rem;     /* text-2xl */
   margin-bottom: 0.5rem; /* mb-2 */
   border: 2px solid #a73332; /* bordes */
-  padding: 0.5rem;      /* p-1 */
+  padding: 0rem;      /* p-1 */
   border-radius: 8px; /* rounded-lg */
   color: #26608e; /* ← Color letra */
   font-weight: bold; /* ← negrita */
@@ -290,7 +308,8 @@ font-family: "Montserrat", sans-serif;
   background: #e9e1d7;
   display: block;
   text-align: center;
-  margin-top: 1rem;
+  margin-top: 0rem;
+  margin-bottom: 0.5rem;
 }
 /* Espacios entre recuadros */
 .bloque {
@@ -352,13 +371,6 @@ font-family: "Montserrat", sans-serif;
   color: #a73332;
   font-weight: 400;
 }
-.alto-unico {
-  height: 30px;          /* 👈 todos los rectángulos misma altura */
-  display: flex;
-  align-items: center;   /* contenido centrado vertical */
-  margin-top: 10px;
-  margin-bottom: 10px;
-}
 .subtitulo.alto-unico,
 .total-precio.alto-unico {
   justify-content: center;   /* centra el texto horizontalmente */
@@ -375,13 +387,14 @@ font-family: "Montserrat", sans-serif;
   transition: 0.2s ease-in-out;
 }
 /* ===== ESTILO TIPO DUPLICAR PARA TODOS ===== */
-.btn-duplicar {
-  background-color: #8e265a;
+
+.btn-duplicar:hover {  
+  background-color: #ff2727;
   color: #e9e1d7;;
 }
-.btn-duplicar:hover {
+.btn-duplicar {
   background-color: #e9e1d7;
-  color: #8e265a;
+  color: #ff2727;
 }
 
 /* ===== ELIMINAR ===== */
@@ -395,23 +408,23 @@ font-family: "Montserrat", sans-serif;
 }
 
 /* ===== CONFIRMAR VENTA ===== */
-.btn-confirmar {
+.btn-confirmar:hover {
   background-color: #12860c;
   color: #e9e1d7;
 }
-.btn-confirmar:hover {
+.btn-confirmar {
   background-color: #e9e1d7;
   color: #12860c;
 }
 
 /* ===== COMANDA ===== */
 .btn-comanda {
-  background-color: #997d01;
-  color: #e9e1d7;;
+  background-color: #e9e1d7;
+  color: #997d01;;
 }
 .btn-comanda:hover {
-  background-color: #e9e1d7;
-  color: #997d01;
+  background-color: #997d01;
+  color: #e9e1d7;
 }
 
 /* ===== LIMPIAR ===== */
@@ -425,12 +438,13 @@ font-family: "Montserrat", sans-serif;
 }
 
 /* ===== ACCIONES SECUNDARIAS (registros, resumenes, etc) ===== */
-.btn-secundario {
+
+.btn-secundario:hover {
   background-color: #26608e;
   color: #e9e1d7;;
   font-size: ;  /* más chico */
 }
-.btn-secundario:hover {
+.btn-secundario {
   background-color: #e9e1d7;
   color: #26608e;
 }
